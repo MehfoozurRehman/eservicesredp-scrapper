@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "json-2-csv": "^5.5.7",
     "puppeteer": "^23.9.0"
   },
   "name": "eservicesredp-scrapper",
