@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "puppeteer": "^23.9.0"
+  },
+  "name": "eservicesredp-scrapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
