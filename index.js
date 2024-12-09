@@ -13,59 +13,47 @@ import fs from "fs/promises";
 
   await page.waitForSelector(".block-from-group");
 
-  await page.click(
-    ".block-from-group .input-group:nth-child(1) .dgaui_dropdownContainer"
-  );
-  await page.waitForSelector(
-    ".block-from-group .input-group:nth-child(1) .dgaui_dropdownItem"
-  );
-  await page.click(
-    ".block-from-group .input-group:nth-child(1) .dgaui_dropdownItem:nth-child(1)"
-  );
+  const selectDropdownOption = async (groupIndex, itemIndex) => {
+    await page.click(
+      `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`
+    );
+    await page.waitForSelector(
+      `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem`
+    );
+    await page.click(
+      `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`
+    );
+  };
 
-  await page.click(
-    ".block-from-group .input-group:nth-child(2) .dgaui_dropdownContainer"
-  );
-  await page.waitForSelector(
-    ".block-from-group .input-group:nth-child(2) .dgaui_dropdownItem"
-  );
-  await page.click(
-    ".block-from-group .input-group:nth-child(2) .dgaui_dropdownItem:nth-child(1)"
-  );
+  await selectDropdownOption(1, 1);
+  await selectDropdownOption(2, 1);
 
   await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
 
-  const getLinksData = async () => {
+  const getLinksHref = async () => {
     await page.waitForNetworkIdle();
 
-    await page.waitForSelector(".blockForm.clickable");
-
-    const data = await page.$$eval(".blockForm.clickable", (links) => {
+    const links = await page.$$eval(".blockForm.clickable", (links) => {
       return links.map((link) => {
-        const items = link.querySelectorAll(
-          ".dataForm.bordered .groupItemShow"
-        );
-        const entry = {};
-        items.forEach((item) => {
-          const key = item.querySelector(".lableShow").innerText;
-          const value = item.querySelector(".showData").innerText;
-          entry[key] = value;
-        });
-        return entry;
+        const href = link.getAttribute("href");
+        return "https://eservicesredp.rega.gov.sa" + href;
       });
     });
 
-    const csv = await json2csv(data, { prependHeader: false });
-    const fileExists = await fs
-      .access("data.csv")
-      .then(() => true)
-      .catch(() => false);
+    console.log(links);
 
-    if (!fileExists) {
-      const header = await json2csv(data, { prependHeader: true });
-      await fs.writeFile("data.csv", header);
-    } else {
-      await fs.appendFile("data.csv", csv);
+    const data = links.flatMap((link) => link);
+
+    try {
+      const existingData = JSON.parse(await fs.readFile("links.json", "utf8"));
+      const updatedData = [...existingData, ...data];
+      await fs.writeFile("links.json", JSON.stringify(updatedData, null, 2));
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        await fs.writeFile("links.json", JSON.stringify(data, null, 2));
+      } else {
+        throw error;
+      }
     }
   };
 
@@ -86,31 +74,31 @@ import fs from "fs/promises";
 
     for (let i = 1; i <= lastPage; i++) {
       console.log(`Page ${i} Start`);
+      await waitFor(1000);
+
+      const nextButtonExists = await page.$(
+        ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+      );
+
+      if (!nextButtonExists) {
+        console.log("Next button does not exist. Stopping.");
+        break;
+      }
+
       await page.click(
         ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
       );
-      await waitFor(1000);
-      await getLinksData();
+      await getLinksHref();
       console.log("Page Done");
     }
   };
 
   console.log("First broker Start");
-
   await getLinks();
-
   console.log("First broker Done");
 
   // // Change the second input's option to the second option
-  await page.click(
-    ".block-from-group .input-group:nth-child(2) .dgaui_dropdownContainer"
-  );
-  await page.waitForSelector(
-    ".block-from-group .input-group:nth-child(2) .dgaui_dropdownItem"
-  );
-  await page.click(
-    ".block-from-group .input-group:nth-child(2) .dgaui_dropdownItem:nth-child(2)"
-  );
+  await selectDropdownOption(2, 2);
 
   await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
 
