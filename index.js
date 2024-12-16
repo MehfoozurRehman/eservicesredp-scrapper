@@ -1,5 +1,4 @@
 import puppeteer from "puppeteer";
-import { json2csv } from "json-2-csv";
 import fs from "fs/promises";
 
 const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));

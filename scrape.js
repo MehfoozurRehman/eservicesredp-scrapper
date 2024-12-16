@@ -2,8 +2,6 @@ import puppeteer from "puppeteer";
 import { json2csv } from "json-2-csv";
 import fs from "fs/promises";
 
-const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));
-
 (async () => {
   let data = [];
   const links = JSON.parse(await fs.readFile("newLinks.json", "utf8"));
@@ -12,7 +10,6 @@ const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));
     headless: false,
   });
 
-  // Process each link one by one
   for (const link of links) {
     const page = await browser.newPage();
 
