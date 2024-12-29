@@ -5,11 +5,11 @@ const waitFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const selectDropdownOption = async (
   page,
+  groupIndex,
   itemIndex1,
   itemIndex2,
   itemIndex3
 ) => {
-  const groupIndex = 1;
   const dropdownSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`;
 
   const selectItem = async (itemIndex) => {
