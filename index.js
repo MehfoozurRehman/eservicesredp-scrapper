@@ -26,33 +26,8 @@ const processBrokerPages = async (page) => {
 
   await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
 
-  const lastPageNumber = await page.evaluate(() => {
-    const lastPageButton = document.querySelector(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(2)"
-    );
-    return lastPageButton ? parseInt(lastPageButton.textContent) : null;
-  });
-
-  console.log("Last page number:", lastPageNumber);
-
-  if (!lastPageNumber) {
-    throw new Error("Last page number not found");
-  }
-
-  for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
+  while (true) {
     await waitFor(1000);
-
-    const nextButtonExists = await page.$(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
-    );
-
-    if (!nextButtonExists) break;
-
-    await page.click(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
-    );
-
-    await page.waitForNetworkIdle();
 
     const links = await page.$$eval(".blockForm.clickable", (links) =>
       links.map(
@@ -74,6 +49,17 @@ const processBrokerPages = async (page) => {
         throw error;
       }
     }
+
+    const nextButton = await page.$(
+      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+    );
+
+    console.log(nextButton, "nextButton");
+
+    if (!nextButton) break;
+
+    await nextButton.click();
+    await page.waitForNetworkIdle();
   }
 };
 
