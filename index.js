@@ -85,6 +85,11 @@ const brokerTypes = [1, 2];
 
         const lastNextButton = nextButton[nextButton.length - 1];
 
+        if (!lastNextButton) {
+          console.log("Last next button not found, exiting loop.");
+          break;
+        }
+
         console.log("Clicking next button.");
 
         await lastNextButton.click();
