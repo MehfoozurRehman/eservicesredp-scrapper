@@ -7,6 +7,7 @@ const selectDropdownOption = async (page, groupIndex, itemIndex) => {
   const dropdownSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`;
   const dropdownItemSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`;
 
+  await page.waitForSelector(dropdownSelector);
   await page.click(dropdownSelector);
   await page.waitForSelector(dropdownItemSelector);
   await page.click(dropdownItemSelector);
