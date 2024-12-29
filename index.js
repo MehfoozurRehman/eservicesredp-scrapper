@@ -65,12 +65,9 @@ const processBrokerPages = async (page) => {
   }
 };
 
-const cities = [
-  { text: "منطقة الرياض", index: 4 },
-  { text: "منطقة القصيم", index: 5 },
-  { text: "منطقة المدينة المنورة", index: 6 },
-  { text: "الشرقية", index: 0 },
-];
+const cities = [1, 5, 6, 7];
+
+const brokerTypes = [1, 2];
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
@@ -79,10 +76,13 @@ const cities = [
   await page.setViewport({ width: 1024, height: 768 });
   await page.waitForSelector(".block-from-group");
 
-  await selectDropdownOption(page, 1, 1);
-  await processBrokerPages(page);
-  await selectDropdownOption(page, 1, 2);
-  await processBrokerPages(page);
+  for (const city of cities) {
+    for (const brokerType of brokerTypes) {
+      await selectDropdownOption(page, 1, brokerType);
+      await selectDropdownOption(page, 4, city);
+      await processBrokerPages(page);
+    }
+  }
 
   await browser.close();
 })();
