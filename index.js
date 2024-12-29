@@ -46,54 +46,61 @@ const brokerTypes = [1, 2];
       console.log("Search button clicked, waiting for network idle.");
 
       while (true) {
-        await waitFor(1000);
-
-        const links = await page.$$eval(".blockForm.clickable", (links) =>
-          links.map(
-            (link) =>
-              "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
-          )
-        );
-
-        console.log("Links found:", links);
-
         try {
-          const existingData = JSON.parse(
-            await fs.readFile("newLinks.json", "utf8")
+          await waitFor(1000);
+
+          const links = await page.$$eval(".blockForm.clickable", (links) =>
+            links.map(
+              (link) =>
+                "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
+            )
           );
-          const updatedData = [...existingData, ...links];
-          await fs.writeFile(
-            "newLinks.json",
-            JSON.stringify(updatedData, null, 2)
-          );
-        } catch (error) {
-          if (error.code === "ENOENT") {
-            await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
-          } else {
-            throw error;
+
+          console.log("Links found:", links);
+
+          try {
+            const existingData = JSON.parse(
+              await fs.readFile("newLinks.json", "utf8")
+            );
+            const updatedData = [...existingData, ...links];
+            await fs.writeFile(
+              "newLinks.json",
+              JSON.stringify(updatedData, null, 2)
+            );
+          } catch (error) {
+            if (error.code === "ENOENT") {
+              await fs.writeFile(
+                "newLinks.json",
+                JSON.stringify(links, null, 2)
+              );
+            } else {
+              throw error;
+            }
           }
+
+          const nextButton = await page.$$(
+            ".sc-irEpRR.hjEfEt.dgaui.dgaui_tab.noAfter"
+          );
+
+          if (nextButton.length === 0) {
+            console.log("Next button not found, exiting loop.");
+            break;
+          }
+
+          const lastNextButton = nextButton[nextButton.length - 1];
+
+          if (!lastNextButton) {
+            console.log("Last next button not found, exiting loop.");
+            break;
+          }
+
+          console.log("Clicking next button.");
+
+          await lastNextButton.click();
+          await page.waitForNetworkIdle();
+        } catch (e) {
+          console.log("Error: ", e);
         }
-
-        const nextButton = await page.$$(
-          ".sc-irEpRR.hjEfEt.dgaui.dgaui_tab.noAfter"
-        );
-
-        if (nextButton.length === 0) {
-          console.log("Next button not found, exiting loop.");
-          break;
-        }
-
-        const lastNextButton = nextButton[nextButton.length - 1];
-
-        if (!lastNextButton) {
-          console.log("Last next button not found, exiting loop.");
-          break;
-        }
-
-        console.log("Clicking next button.");
-
-        await lastNextButton.click();
-        await page.waitForNetworkIdle();
       }
     }
   }
