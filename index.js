@@ -3,26 +3,16 @@ import puppeteer from "puppeteer";
 
 const waitFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const cities = [
-  { text: "منطقة الرياض", index: 4 },
-  { text: "منطقة القصيم", index: 5 },
-  { text: "منطقة المدينة المنورة", index: 6 },
-  { text: "الشرقية", index: 0 },
-];
-
 const selectDropdownOption = async (page, groupIndex, itemIndex) => {
-  await page.click(
-    `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`
-  );
-  await page.waitForSelector(
-    `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem`
-  );
-  await page.click(
-    `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`
-  );
+  const dropdownSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`;
+  const dropdownItemSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`;
+
+  await page.click(dropdownSelector);
+  await page.waitForSelector(dropdownItemSelector);
+  await page.click(dropdownItemSelector);
 };
 
-const getLinksHref = async (page) => {
+const saveLinksToFile = async (page) => {
   await page.waitForNetworkIdle();
 
   const links = await page.$$eval(".blockForm.clickable", (links) =>
@@ -31,15 +21,13 @@ const getLinksHref = async (page) => {
     )
   );
 
-  const data = links.flatMap((link) => link);
-
   try {
     const existingData = JSON.parse(await fs.readFile("newLinks.json", "utf8"));
-    const updatedData = [...existingData, ...data];
+    const updatedData = [...existingData, ...links];
     await fs.writeFile("newLinks.json", JSON.stringify(updatedData, null, 2));
   } catch (error) {
     if (error.code === "ENOENT") {
-      await fs.writeFile("newLinks.json", JSON.stringify(data, null, 2));
+      await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
     } else {
       throw error;
     }
@@ -51,27 +39,46 @@ const getLastPageNumber = async (page) => {
     const lastPageButton = document.querySelector(
       ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(2)"
     );
-    return parseInt(lastPageButton.innerText);
+    return lastPageButton ? parseInt(lastPageButton.innerText) : 0;
   });
 };
 
 const processPages = async (page, lastPageNumber) => {
-  for (let i = 1; i <= lastPageNumber; i++) {
+  for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
     await waitFor(1000);
+
     const nextButtonExists = await page.$(
       ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
     );
 
-    if (!nextButtonExists) {
-      break;
-    }
+    if (!nextButtonExists) break;
 
     await page.click(
       ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
     );
-    await getLinksHref(page);
+    await saveLinksToFile(page);
   }
 };
+
+const processBrokerPages = async (page, groupIndex, itemIndex) => {
+  await selectDropdownOption(page, groupIndex, itemIndex);
+  await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
+
+  await page.waitForNetworkIdle();
+  await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
+
+  const lastPageNumber = await getLastPageNumber(page);
+  if (lastPageNumber > 0) {
+    await processPages(page, lastPageNumber);
+  }
+};
+
+const cities = [
+  { text: "منطقة الرياض", index: 4 },
+  { text: "منطقة القصيم", index: 5 },
+  { text: "منطقة المدينة المنورة", index: 6 },
+  { text: "الشرقية", index: 0 },
+];
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
@@ -80,20 +87,8 @@ const processPages = async (page, lastPageNumber) => {
   await page.setViewport({ width: 1024, height: 768 });
   await page.waitForSelector(".block-from-group");
 
-  await selectDropdownOption(page, 1, 1);
-  await selectDropdownOption(page, 2, 1);
+  await processBrokerPages(page, 1, 1);
+  await processBrokerPages(page, 2, 2);
 
-  await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
-
-  await page.waitForNetworkIdle();
-  await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
-
-  const lastPageFirstBroker = await getLastPageNumber(page);
-  await processPages(page, lastPageFirstBroker);
-
-  await selectDropdownOption(page, 2, 2);
-  await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
-
-  const lastPageSecondBroker = await getLastPageNumber(page);
-  await processPages(lastPageSecondBroker);
+  await browser.close();
 })();
