@@ -5,12 +5,18 @@ const waitFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const selectDropdownOption = async (page, groupIndex, itemIndex) => {
   const dropdownSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`;
-  const dropdownItemSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`;
+  const dropdownItemSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem`;
 
   await page.waitForSelector(dropdownSelector);
   await page.click(dropdownSelector);
   await page.waitForSelector(dropdownItemSelector);
-  await page.click(dropdownItemSelector);
+
+  const items = await page.$$(dropdownItemSelector);
+  if (items.length >= itemIndex) {
+    await items[itemIndex - 1].click();
+  } else {
+    throw new Error(`Dropdown item at index ${itemIndex} not found`);
+  }
 };
 
 const processBrokerPages = async (page) => {
