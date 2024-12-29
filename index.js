@@ -30,8 +30,12 @@ const processBrokerPages = async (page) => {
     const lastPageButton = document.querySelector(
       ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(2)"
     );
-    return lastPageButton ? parseInt(lastPageButton.innerText) : 0;
+    return parseInt(lastPageButton.innerText);
   });
+
+  if (!lastPageNumber) {
+    throw new Error("Last page number not found");
+  }
 
   for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
     await waitFor(1000);
@@ -84,7 +88,8 @@ const brokerTypes = [1, 2];
 
   for (const city of cities) {
     for (const brokerType of brokerTypes) {
-      await selectDropdownOption(page, 1, brokerType);
+      await selectDropdownOption(page, 1, 1);
+      await selectDropdownOption(page, 2, brokerType);
       await selectDropdownOption(page, 4, city);
       await processBrokerPages(page);
     }
