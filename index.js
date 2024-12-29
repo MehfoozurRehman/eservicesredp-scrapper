@@ -100,6 +100,7 @@ const brokerTypes = [1, 2];
           await page.waitForNetworkIdle();
         } catch (e) {
           console.log("Error: ", e);
+          break;
         }
       }
     }
