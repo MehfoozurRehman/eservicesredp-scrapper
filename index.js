@@ -3,26 +3,14 @@ import puppeteer from "puppeteer";
 
 const waitFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const selectDropdownOption = async (
-  page,
-  groupIndex,
-  itemIndex1,
-  itemIndex2,
-  itemIndex3
-) => {
+const selectDropdownOption = async (page, groupIndex, itemIndex) => {
   const dropdownSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownContainer`;
+  const dropdownItemSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`;
 
-  const selectItem = async (itemIndex) => {
-    const dropdownItemSelector = `.block-from-group .input-group:nth-child(${groupIndex}) .dgaui_dropdownItem:nth-child(${itemIndex})`;
-    await page.waitForSelector(dropdownSelector);
-    await page.click(dropdownSelector);
-    await page.waitForSelector(dropdownItemSelector);
-    await page.click(dropdownItemSelector);
-  };
-
-  await selectItem(itemIndex1);
-  await selectItem(itemIndex2);
-  await selectItem(itemIndex3);
+  await page.waitForSelector(dropdownSelector);
+  await page.click(dropdownSelector);
+  await page.waitForSelector(dropdownItemSelector);
+  await page.click(dropdownItemSelector);
 };
 
 const processBrokerPages = async (page) => {
@@ -77,9 +65,12 @@ const processBrokerPages = async (page) => {
   }
 };
 
-const cities = [1, 5, 6, 7];
-
-const brokerTypes = [1, 2];
+const cities = [
+  { text: "منطقة الرياض", index: 4 },
+  { text: "منطقة القصيم", index: 5 },
+  { text: "منطقة المدينة المنورة", index: 6 },
+  { text: "الشرقية", index: 0 },
+];
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
@@ -88,12 +79,10 @@ const brokerTypes = [1, 2];
   await page.setViewport({ width: 1024, height: 768 });
   await page.waitForSelector(".block-from-group");
 
-  for (const city of cities) {
-    for (const brokerType of brokerTypes) {
-      await selectDropdownOption(page, 1, brokerType, city);
-      await processBrokerPages(page);
-    }
-  }
+  await selectDropdownOption(page, 1, 1);
+  await processBrokerPages(page);
+  await selectDropdownOption(page, 1, 2);
+  await processBrokerPages(page);
 
-  // await browser.close();
+  await browser.close();
 })();
