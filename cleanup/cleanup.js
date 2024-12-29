@@ -1,27 +1,16 @@
 import fs from "fs/promises";
-import { parse } from "csv-parse";
 import { json2csv } from "json-2-csv";
+import { parse } from "csv-parse/sync";
 
 (async () => {
-  const csv = await fs.readFile("data.csv");
-  const records = await new Promise((resolve, reject) => {
-    parse(csv, { columns: true }, (err, records) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(records);
-      }
-    });
-  });
+  const csv = await fs.readFile("data.csv", "utf8");
+  const records = parse(csv, { columns: true });
 
-  // remove the ones with undefined values
-  const cleanedRecords = records.filter((record) => {
-    return Object.values(record).every(
-      (value) => value !== undefined && value !== "undefined"
-    );
-  });
+  const cleanedRecords = records.filter((record) =>
+    Object.values(record).every((value) => value && value !== "undefined")
+  );
 
-  const cleanedCsv = json2csv(cleanedRecords);
+  const cleanedCsv = await json2csv(cleanedRecords);
 
   await fs.writeFile("cleanedData.csv", cleanedCsv);
 })();
