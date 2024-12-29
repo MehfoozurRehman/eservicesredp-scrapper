@@ -30,8 +30,10 @@ const processBrokerPages = async (page) => {
     const lastPageButton = document.querySelector(
       ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(2)"
     );
-    return parseInt(lastPageButton.innerText);
+    return lastPageButton ? parseInt(lastPageButton.textContent) : null;
   });
+
+  console.log("Last page number:", lastPageNumber);
 
   if (!lastPageNumber) {
     throw new Error("Last page number not found");
