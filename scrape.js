@@ -1,22 +1,21 @@
-import puppeteer from "puppeteer";
-import { json2csv } from "json-2-csv";
 import fs from "fs/promises";
+import { json2csv } from "json-2-csv";
+import puppeteer from "puppeteer";
 
 (async () => {
   let data = [];
   const links = JSON.parse(await fs.readFile("newLinks.json", "utf8"));
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
   });
 
-  for (const link of links) {
-    const page = await browser.newPage();
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1024, height: 768 });
 
+  for (const link of links) {
     try {
-      await page.goto(link);
-      await page.setViewport({ width: 1024, height: 768 });
-      await page.waitForNetworkIdle();
+      await page.goto(link, { waitUntil: "networkidle2" });
 
       const blockFormContents = await page.$$eval(".blockForm", (elements) =>
         elements.map((el) => el.innerHTML)
@@ -27,8 +26,10 @@ import fs from "fs/promises";
 
         for (const html of htmlArray) {
           const keyValuePairs = await page.evaluate((htmlContent) => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlContent, "text/html");
+            const doc = new DOMParser().parseFromString(
+              htmlContent,
+              "text/html"
+            );
             const dataForm = doc.querySelectorAll(".groupItemShow");
 
             const data = {};
@@ -61,12 +62,9 @@ import fs from "fs/promises";
       console.log(`Data collected from ${link}`);
     } catch (error) {
       console.error(`Failed to process ${link}:`, error);
-    } finally {
-      await page.close();
     }
   }
 
-  // Convert the collected data to CSV and save it
   try {
     const csv = await json2csv(data);
     await fs.writeFile("data.csv", csv);
