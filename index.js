@@ -1,7 +1,9 @@
-import puppeteer from "puppeteer";
 import fs from "fs/promises";
+import puppeteer from "puppeteer";
 
 const waitFor = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const cities = ["الرياض", "القصيم", "جدة", "الشرقية", "المدينة المنورة"];
 
 (async () => {
   const browser = await puppeteer.launch({
