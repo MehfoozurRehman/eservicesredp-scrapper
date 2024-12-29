@@ -55,6 +55,8 @@ const brokerTypes = [1, 2];
           )
         );
 
+        console.log("Links found:", links);
+
         try {
           const existingData = JSON.parse(
             await fs.readFile("newLinks.json", "utf8")
@@ -72,17 +74,20 @@ const brokerTypes = [1, 2];
           }
         }
 
-        const nextButton = await page.$(
-          ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+        const nextButton = await page.$$(
+          ".sc-irEpRR.hjEfEt.dgaui.dgaui_tab.noAfter"
         );
 
-        if (!nextButton) {
+        if (nextButton.length === 0) {
           console.log("Next button not found, exiting loop.");
           break;
         }
 
-        console.log("Next button found, clicking it.");
-        await nextButton.click();
+        const lastNextButton = nextButton[nextButton.length - 1];
+
+        console.log("Clicking next button.");
+
+        await lastNextButton.click();
         await page.waitForNetworkIdle();
       }
     }
