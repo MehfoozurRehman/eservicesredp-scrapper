@@ -13,54 +13,6 @@ const selectDropdownOption = async (page, groupIndex, itemIndex) => {
   await page.click(dropdownItemSelector);
 };
 
-const saveLinksToFile = async (page) => {
-  await page.waitForNetworkIdle();
-
-  const links = await page.$$eval(".blockForm.clickable", (links) =>
-    links.map(
-      (link) => "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
-    )
-  );
-
-  try {
-    const existingData = JSON.parse(await fs.readFile("newLinks.json", "utf8"));
-    const updatedData = [...existingData, ...links];
-    await fs.writeFile("newLinks.json", JSON.stringify(updatedData, null, 2));
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
-    } else {
-      throw error;
-    }
-  }
-};
-
-const getLastPageNumber = async (page) => {
-  return await page.evaluate(() => {
-    const lastPageButton = document.querySelector(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(2)"
-    );
-    return lastPageButton ? parseInt(lastPageButton.innerText) : 0;
-  });
-};
-
-const processPages = async (page, lastPageNumber) => {
-  for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
-    await waitFor(1000);
-
-    const nextButtonExists = await page.$(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
-    );
-
-    if (!nextButtonExists) break;
-
-    await page.click(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
-    );
-    await saveLinksToFile(page);
-  }
-};
-
 const processBrokerPages = async (page, groupIndex, itemIndex) => {
   await selectDropdownOption(page, groupIndex, itemIndex);
   await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
@@ -68,9 +20,53 @@ const processBrokerPages = async (page, groupIndex, itemIndex) => {
   await page.waitForNetworkIdle();
   await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
 
-  const lastPageNumber = await getLastPageNumber(page);
+  const lastPageNumber = await page.evaluate(() => {
+    const lastPageButton = document.querySelector(
+      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(2)"
+    );
+    return lastPageButton ? parseInt(lastPageButton.innerText) : 0;
+  });
+
   if (lastPageNumber > 0) {
-    await processPages(page, lastPageNumber);
+    for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
+      await waitFor(1000);
+
+      const nextButtonExists = await page.$(
+        ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+      );
+
+      if (!nextButtonExists) break;
+
+      await page.click(
+        ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+      );
+
+      await page.waitForNetworkIdle();
+
+      const links = await page.$$eval(".blockForm.clickable", (links) =>
+        links.map(
+          (link) =>
+            "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
+        )
+      );
+
+      try {
+        const existingData = JSON.parse(
+          await fs.readFile("newLinks.json", "utf8")
+        );
+        const updatedData = [...existingData, ...links];
+        await fs.writeFile(
+          "newLinks.json",
+          JSON.stringify(updatedData, null, 2)
+        );
+      } catch (error) {
+        if (error.code === "ENOENT") {
+          await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
+        } else {
+          throw error;
+        }
+      }
+    }
   }
 };
 
