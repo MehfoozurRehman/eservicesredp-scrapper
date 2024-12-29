@@ -13,11 +13,11 @@ const selectDropdownOption = async (page, groupIndex, itemIndex) => {
   await page.click(dropdownItemSelector);
 };
 
-const processBrokerPages = async (page, groupIndex, itemIndex) => {
-  await selectDropdownOption(page, groupIndex, itemIndex);
+const processBrokerPages = async (page) => {
   await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
 
   await page.waitForNetworkIdle();
+
   await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
 
   const lastPageNumber = await page.evaluate(() => {
@@ -27,44 +27,39 @@ const processBrokerPages = async (page, groupIndex, itemIndex) => {
     return lastPageButton ? parseInt(lastPageButton.innerText) : 0;
   });
 
-  if (lastPageNumber > 0) {
-    for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
-      await waitFor(1000);
+  for (let pageNumber = 1; pageNumber <= lastPageNumber; pageNumber++) {
+    await waitFor(1000);
 
-      const nextButtonExists = await page.$(
-        ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+    const nextButtonExists = await page.$(
+      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+    );
+
+    if (!nextButtonExists) break;
+
+    await page.click(
+      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+    );
+
+    await page.waitForNetworkIdle();
+
+    const links = await page.$$eval(".blockForm.clickable", (links) =>
+      links.map(
+        (link) =>
+          "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
+      )
+    );
+
+    try {
+      const existingData = JSON.parse(
+        await fs.readFile("newLinks.json", "utf8")
       );
-
-      if (!nextButtonExists) break;
-
-      await page.click(
-        ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
-      );
-
-      await page.waitForNetworkIdle();
-
-      const links = await page.$$eval(".blockForm.clickable", (links) =>
-        links.map(
-          (link) =>
-            "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
-        )
-      );
-
-      try {
-        const existingData = JSON.parse(
-          await fs.readFile("newLinks.json", "utf8")
-        );
-        const updatedData = [...existingData, ...links];
-        await fs.writeFile(
-          "newLinks.json",
-          JSON.stringify(updatedData, null, 2)
-        );
-      } catch (error) {
-        if (error.code === "ENOENT") {
-          await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
-        } else {
-          throw error;
-        }
+      const updatedData = [...existingData, ...links];
+      await fs.writeFile("newLinks.json", JSON.stringify(updatedData, null, 2));
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
+      } else {
+        throw error;
       }
     }
   }
@@ -84,8 +79,10 @@ const cities = [
   await page.setViewport({ width: 1024, height: 768 });
   await page.waitForSelector(".block-from-group");
 
-  await processBrokerPages(page, 1, 1);
-  await processBrokerPages(page, 2, 2);
+  await selectDropdownOption(page, 1, 1);
+  await processBrokerPages(page);
+  await selectDropdownOption(page, 1, 2);
+  await processBrokerPages(page);
 
   await browser.close();
 })();
