@@ -19,50 +19,6 @@ const selectDropdownOption = async (page, groupIndex, itemIndex) => {
   }
 };
 
-const processBrokerPages = async (page) => {
-  await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
-
-  await page.waitForNetworkIdle();
-
-  await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
-
-  while (true) {
-    await waitFor(1000);
-
-    const links = await page.$$eval(".blockForm.clickable", (links) =>
-      links.map(
-        (link) =>
-          "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
-      )
-    );
-
-    try {
-      const existingData = JSON.parse(
-        await fs.readFile("newLinks.json", "utf8")
-      );
-      const updatedData = [...existingData, ...links];
-      await fs.writeFile("newLinks.json", JSON.stringify(updatedData, null, 2));
-    } catch (error) {
-      if (error.code === "ENOENT") {
-        await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
-      } else {
-        throw error;
-      }
-    }
-
-    const nextButton = await page.$(
-      ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
-    );
-
-    console.log(nextButton, "nextButton");
-
-    if (!nextButton) break;
-
-    await nextButton.click();
-    await page.waitForNetworkIdle();
-  }
-};
-
 const cities = [1, 5, 6, 7];
 
 const brokerTypes = [1, 2];
@@ -79,9 +35,58 @@ const brokerTypes = [1, 2];
       await selectDropdownOption(page, 1, 1);
       await selectDropdownOption(page, 2, brokerType);
       await selectDropdownOption(page, 4, city);
-      await processBrokerPages(page);
+
+      console.log("Clicking search button.");
+
+      await page.waitForNetworkIdle();
+      await page.click(".sc-knesRu.JDvEH.dgaui.dgaui_button.buttonMw160");
+      await page.waitForNetworkIdle();
+      await page.waitForSelector(".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination");
+
+      console.log("Search button clicked, waiting for network idle.");
+
+      while (true) {
+        await waitFor(1000);
+
+        const links = await page.$$eval(".blockForm.clickable", (links) =>
+          links.map(
+            (link) =>
+              "https://eservicesredp.rega.gov.sa" + link.getAttribute("href")
+          )
+        );
+
+        try {
+          const existingData = JSON.parse(
+            await fs.readFile("newLinks.json", "utf8")
+          );
+          const updatedData = [...existingData, ...links];
+          await fs.writeFile(
+            "newLinks.json",
+            JSON.stringify(updatedData, null, 2)
+          );
+        } catch (error) {
+          if (error.code === "ENOENT") {
+            await fs.writeFile("newLinks.json", JSON.stringify(links, null, 2));
+          } else {
+            throw error;
+          }
+        }
+
+        const nextButton = await page.$(
+          ".sc-dJDBYC.ecwOXH.dgaui.dgaui_pagination button:nth-last-child(1)"
+        );
+
+        if (!nextButton) {
+          console.log("Next button not found, exiting loop.");
+          break;
+        }
+
+        console.log("Next button found, clicking it.");
+        await nextButton.click();
+        await page.waitForNetworkIdle();
+      }
     }
   }
 
-  await browser.close();
+  // await browser.close();
 })();
